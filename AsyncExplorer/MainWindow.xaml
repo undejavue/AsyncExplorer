@@ -1,0 +1,91 @@
+﻿<Window x:Class="AsyncExplorer.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:AsyncExplorer"
+        xmlns:i="clr-namespace:System.Windows.Interactivity;assembly=System.Windows.Interactivity"
+        xmlns:converters="clr-namespace:AsyncExplorer.Converters"
+        xmlns:models="clr-namespace:AsyncExplorer.ViewModels"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="350" Width="525">
+    <Window.Resources>
+        <converters:BoolToColorConverter x:Key="boolToColorConverter" />
+        <converters:BoolToVisibilityConverter x:Key="boolToVisibilityConverter" />
+    </Window.Resources>
+
+    <DockPanel Name="mainPanel">
+        <StatusBar DockPanel.Dock="Bottom">
+            <StatusBarItem >
+                <TextBlock Text="Items:"/>
+            </StatusBarItem>
+            <StatusBarItem Width="80">
+                <TextBlock Text="{Binding Status.ItemsCount}"/>
+            </StatusBarItem>
+            <StatusBarItem>
+                <TextBlock Text="Files:"/>
+            </StatusBarItem>
+            <StatusBarItem >
+                <TextBlock Text="{Binding Sttaus.FilesCount}"/>
+            </StatusBarItem>
+            <StatusBarItem>
+                <TextBlock Text="Folders:"/>
+            </StatusBarItem>
+            <StatusBarItem>
+                <TextBlock Text="{Binding Status.FoldersCount}"/>
+            </StatusBarItem>
+            <StatusBarItem>
+                <TextBlock Text="Size:"/>
+            </StatusBarItem>
+            <StatusBarItem >
+                <TextBlock Text="{Binding Status.Size}"/>
+            </StatusBarItem>
+        </StatusBar>
+
+        <DockPanel x:Name="pnlToolBar" DockPanel.Dock="Top"  FlowDirection="RightToLeft"  HorizontalAlignment="Stretch" VerticalAlignment="Top" Height="40" Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}" >
+            <Button Name="btnRefresh" Content="Refresh" Width="75" Margin="10,10" Command="{Binding GetTreeNodes}"  ></Button>
+            <Button x:Name="btnCancel" Content="Cancel" Width="75" Margin="10,10" Command="{Binding GetNodeSize.CancelCommand}"  />
+            <!--<CheckBox Name="chkShowHidden" Content="Show hidden files" Margin="10" VerticalAlignment="Center" IsChecked="{Binding ShowHiddens, Mode=TwoWay}"  FontSize="14"></CheckBox>
+            <StackPanel Name="pnlDrives" Orientation="Horizontal" Margin="10"></StackPanel>
+            <TextBox Name="tbPath" TextWrapping="NoWrap" Margin="10"  Width="Auto" FlowDirection="LeftToRight" Text="{Binding AddressBar}" Background="{DynamicResource {x:Static SystemColors.HighlightTextBrushKey}}"/>-->
+        </DockPanel>
+
+        <TreeView  x:Name="treeView"  HorizontalAlignment="Stretch" Height="Auto" Width="Auto" 
+                   VerticalAlignment="Stretch" HorizontalContentAlignment="Stretch" FontSize="14"
+                   ItemsSource="{Binding GetTreeNodes.Execution.Result}"   >
+            <TreeView.Resources>
+                <HierarchicalDataTemplate DataType="{x:Type models:TreeModel}" ItemsSource="{Binding Children}">
+                    <!--<Button Content="{Binding Name}" Command="{Binding GetTreeNodes}" />-->
+                    <StackPanel>
+                        <TextBlock Text="{Binding Name}" Foreground="{Binding IsDenied, Converter={StaticResource boolToColorConverter}}"/>
+                        <i:Interaction.Triggers>
+                            <i:EventTrigger EventName="MouseLeftButtonDown">
+                                <i:InvokeCommandAction Command="{Binding GetNodeChildrens.CancelCommand}"/>
+                            </i:EventTrigger>
+                            
+                            <i:EventTrigger EventName="MouseLeftButtonUp">
+                                <i:InvokeCommandAction Command="{Binding GetNodeChildrens}" 
+                                                   CommandParameter="{Binding ElementName=treeView, Path=SelectedItem, IsAsync=True}"/>
+                        </i:EventTrigger>
+                        </i:Interaction.Triggers>
+                    </StackPanel>
+
+                </HierarchicalDataTemplate>
+            </TreeView.Resources>
+            <i:Interaction.Triggers>
+                <i:EventTrigger EventName="SelectedItemChanged">
+                    <i:InvokeCommandAction Command="{Binding GetNodeSize}" 
+                                           CommandParameter="{Binding ElementName=treeView, Path=SelectedItem, IsAsync=True}"/>
+                </i:EventTrigger>
+            </i:Interaction.Triggers>
+            <TreeView.ItemContainerStyle>
+                <Style TargetType="{x:Type TreeViewItem}">
+                    <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
+                    <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
+                    <Setter Property="Visibility" Value="{Binding HideSystem, Converter={StaticResource boolToVisibilityConverter}}" />
+                </Style>
+            </TreeView.ItemContainerStyle>
+        </TreeView>
+
+    </DockPanel>
+</Window>
