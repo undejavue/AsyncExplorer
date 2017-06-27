@@ -7,7 +7,7 @@ namespace AsyncExplorer.ViewModels
 {
     public class TreeModel : TreeEntityModel
     {
-        public IAsyncCommand GetNodeChildrens { get; private set; }
+        public IAsyncCommand GetNode { get; private set; }
 
         private TreeModel _parent;
         public TreeModel Parent
@@ -28,7 +28,7 @@ namespace AsyncExplorer.ViewModels
         public TreeModel()
         {
             this.Children = new ObservableCollection<TreeModel>();
-            GetNodeChildrens = AsyncCommand.Create((token, arg) => DirectoryService.GetNodeTreeAsync(arg, this, token));
+            GetNode = AsyncCommand.Create((token, arg) => DirectoryService.GetNode(this, token));
         }
 
         public TreeModel(TreeModel node) : this()
@@ -50,6 +50,26 @@ namespace AsyncExplorer.ViewModels
                 node.HideSystem = node.IsHidden & !value;
                 SetHiddenProperty(node.Children, value);
             }
+        }
+
+        public int GetChildrenCount(TreeModel node, ref int i)
+        {
+            i += node.Children.Count;
+
+            foreach (var child in Children)
+                i = i + GetChildrenCount(child, ref i);
+
+            return i;
+        }
+
+        public void SetDefaults()
+        {
+            FilesCount = 0;
+            FoldersCount = 0;
+            Count = 0;
+            SizeStr = "Calculating...";
+            Size = 0;
+            Progress = 0;
         }
     }
 }

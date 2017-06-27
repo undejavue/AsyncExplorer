@@ -21,7 +21,7 @@ namespace AsyncExplorer.Services
         /// <param name="parent">Parent tree node</param>
         /// <param name="token">Cancellation Token for break operation</param>
         /// <returns></returns>
-        public static ObservableCollection<TreeModel> GetNodeTree(TreeModel parent, CancellationToken token)
+        public static ObservableCollection<TreeModel> GetNodeTree(TreeModel parent, CancellationToken token = new CancellationToken())
         {
             var result = new ObservableCollection<TreeModel>();
             DirectoryInfo[] rootLevel = { };
@@ -54,7 +54,9 @@ namespace AsyncExplorer.Services
                 foreach (var inner in innerLevel)
                 {
                     if (token.IsCancellationRequested)
+                    {
                         break;
+                    }       
 
                     isHidden = IsHiddenDirectory(inner);
                     node.AddChild(new TreeModel { Path = inner.FullName, Name = inner.Name, IsFile = false, IsHidden = isHidden });
@@ -83,12 +85,6 @@ namespace AsyncExplorer.Services
                 result.Add(new TreeModel { Path = file.FullName, Name = file.Name, IsFile = true, IsHidden = isHidden });
             }
 
-            //parent.Children.Clear();
-
-            //foreach (var r in result)
-            //{
-            //    parent.AddChild(r);    
-            //}
 
             return result;
         }
@@ -110,8 +106,10 @@ namespace AsyncExplorer.Services
             {
                 if (path.Length < dirNameMaxLen)
                 {
-                    result.AddRange(Directory.GetDirectories(path, pattern, SearchOption.TopDirectoryOnly));
-                    foreach (var directory in Directory.GetDirectories(path))
+                    var dirs = Directory.EnumerateDirectories(path, pattern, SearchOption.TopDirectoryOnly);
+                    var directories = dirs as string[] ?? dirs.ToArray();
+                    result.AddRange(directories);
+                    foreach (var directory in directories)
                     {
                         if (token.IsCancellationRequested)
                         {
@@ -151,8 +149,9 @@ namespace AsyncExplorer.Services
             {
                 if (path.Length <= dirNameMaxLen)
                 {
-                    files.AddRange(Directory.GetFiles(path, pattern, SearchOption.TopDirectoryOnly));
-                    foreach (var directory in Directory.GetDirectories(path))
+                    var list = Directory.EnumerateFiles(path, pattern, SearchOption.TopDirectoryOnly);
+                    files.AddRange(list);
+                    foreach (var directory in Directory.EnumerateDirectories(path))
                     {
                         if (token.IsCancellationRequested)
                         {
@@ -223,9 +222,21 @@ namespace AsyncExplorer.Services
             return fileInfo;
         }
 
-        public static List<string> GetDrives()
+        public static List<DriveInfo> GetDrives()
         {
-            return Directory.GetLogicalDrives().ToList();
+            return DriveInfo.GetDrives().ToList();
+        }
+
+        public static string GetReadableSize(long len)
+        {
+            string[] sizes = { "B", "KB", "MB", "GB", "TB" };
+            int order = 0;
+            while (len >= 1024 && order < sizes.Length - 1)
+            {
+                order++;
+                len = len / 1024;
+            }
+            return string.Format("{0:0.##} {1}", len, sizes[order]);
         }
     }
 }

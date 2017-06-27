@@ -26,6 +26,48 @@ namespace AsyncExplorer.ViewModels
             set { size = value; OnPropertyChanged(nameof(Size)); }
         }
 
+        private string sizeStr;
+        public string SizeStr
+        {
+            get { return sizeStr; }
+            set { sizeStr = value; OnPropertyChanged(nameof(SizeStr)); }
+        }
+
+        private int progress;
+        public int Progress
+        {
+            get { return progress; }
+            set { progress = value; OnPropertyChanged(nameof(Progress)); }
+        }
+
+        private int filesCount;
+        public int FilesCount
+        {
+            get { return filesCount; }
+            set { filesCount = value; OnPropertyChanged(nameof(FilesCount)); }
+        }
+
+        private int foldersCount;
+        public int FoldersCount
+        {
+            get { return foldersCount; }
+            set { foldersCount = value; OnPropertyChanged(nameof(FoldersCount)); }
+        }
+
+        private int count;
+        public int Count
+        {
+            get { return count; }
+            set { count = value; OnPropertyChanged(nameof(Count)); }
+        }
+
+        private double elapsed;
+        public double Elapsed
+        {
+            get { return elapsed; }
+            set { elapsed = value; OnPropertyChanged(nameof(Elapsed)); }
+        }
+
         private bool isFile;
         public bool IsFile
         {

@@ -8,7 +8,7 @@
         xmlns:converters="clr-namespace:AsyncExplorer.Converters"
         xmlns:models="clr-namespace:AsyncExplorer.ViewModels"
         mc:Ignorable="d"
-        Title="MainWindow" Height="350" Width="525">
+        Title="MainWindow" Height="500" Width="600">
     <Window.Resources>
         <converters:BoolToColorConverter x:Key="boolToColorConverter" />
         <converters:BoolToVisibilityConverter x:Key="boolToVisibilityConverter" />
@@ -20,39 +20,67 @@
                 <TextBlock Text="Items:"/>
             </StatusBarItem>
             <StatusBarItem Width="80">
-                <TextBlock Text="{Binding Status.ItemsCount}"/>
+                <TextBlock Text="{Binding SelectedItem.Count}"/>
             </StatusBarItem>
             <StatusBarItem>
                 <TextBlock Text="Files:"/>
             </StatusBarItem>
             <StatusBarItem >
-                <TextBlock Text="{Binding Sttaus.FilesCount}"/>
+                <TextBlock Text="{Binding SelectedItem.FilesCount}"/>
             </StatusBarItem>
             <StatusBarItem>
                 <TextBlock Text="Folders:"/>
             </StatusBarItem>
             <StatusBarItem>
-                <TextBlock Text="{Binding Status.FoldersCount}"/>
+                <TextBlock Text="{Binding SelectedItem.FoldersCount}"/>
             </StatusBarItem>
             <StatusBarItem>
                 <TextBlock Text="Size:"/>
             </StatusBarItem>
             <StatusBarItem >
-                <TextBlock Text="{Binding Status.Size}"/>
+                <TextBlock Text="{Binding SelectedItem.SizeStr}"/>
+            </StatusBarItem>
+            <StatusBarItem>
+                <TextBlock Text="Time Elapsed:"/>
+            </StatusBarItem>
+            <StatusBarItem >
+                <TextBlock Text="{Binding SelectedItem.Elapsed}"/>
             </StatusBarItem>
         </StatusBar>
 
-        <DockPanel x:Name="pnlToolBar" DockPanel.Dock="Top"  FlowDirection="RightToLeft"  HorizontalAlignment="Stretch" VerticalAlignment="Top" Height="40" Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}" >
-            <Button Name="btnRefresh" Content="Refresh" Width="75" Margin="10,10" Command="{Binding GetTreeNodes}"  ></Button>
-            <Button x:Name="btnCancel" Content="Cancel" Width="75" Margin="10,10" Command="{Binding GetNodeSize.CancelCommand}"  />
-            <!--<CheckBox Name="chkShowHidden" Content="Show hidden files" Margin="10" VerticalAlignment="Center" IsChecked="{Binding ShowHiddens, Mode=TwoWay}"  FontSize="14"></CheckBox>
-            <StackPanel Name="pnlDrives" Orientation="Horizontal" Margin="10"></StackPanel>
-            <TextBox Name="tbPath" TextWrapping="NoWrap" Margin="10"  Width="Auto" FlowDirection="LeftToRight" Text="{Binding AddressBar}" Background="{DynamicResource {x:Static SystemColors.HighlightTextBrushKey}}"/>-->
+        <DockPanel x:Name="pnlToolBar" DockPanel.Dock="Top"  
+                   FlowDirection="RightToLeft"  
+                   HorizontalAlignment="Stretch" 
+                   VerticalAlignment="Top" Height="40" 
+                   Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}" >
+            <ListBox VerticalAlignment="Stretch"                       
+                     HorizontalAlignment="Stretch"
+                     SelectedItem="{Binding SelectedDrive}"
+                     ItemsSource ="{Binding Drives}" >
+                <ListBox.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <DockPanel FlowDirection="LeftToRight" Background="Transparent" HorizontalAlignment="Stretch"  Margin="5"/>
+                    </ItemsPanelTemplate>
+                </ListBox.ItemsPanel>
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding Name}" Margin="10,0,10,0" MinWidth="10" Background="Transparent"/>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+                <i:Interaction.Triggers>
+                    <i:EventTrigger EventName="SelectionChanged">
+                        <i:InvokeCommandAction Command="{Binding SetDrive}"/>
+                    </i:EventTrigger>
+                </i:Interaction.Triggers>
+            </ListBox>
         </DockPanel>
 
-        <TreeView  x:Name="treeView"  HorizontalAlignment="Stretch" Height="Auto" Width="Auto" 
-                   VerticalAlignment="Stretch" HorizontalContentAlignment="Stretch" FontSize="14"
-                   ItemsSource="{Binding GetTreeNodes.Execution.Result}"   >
+        <TreeView  x:Name="treeView"  
+                   HorizontalAlignment="Stretch" 
+                   VerticalAlignment="Stretch" 
+                   HorizontalContentAlignment="Stretch" 
+                   FontSize="14"
+                   ItemsSource="{Binding Children}"   >
             <TreeView.Resources>
                 <HierarchicalDataTemplate DataType="{x:Type models:TreeModel}" ItemsSource="{Binding Children}">
                     <!--<Button Content="{Binding Name}" Command="{Binding GetTreeNodes}" />-->
@@ -60,11 +88,10 @@
                         <TextBlock Text="{Binding Name}" Foreground="{Binding IsDenied, Converter={StaticResource boolToColorConverter}}"/>
                         <i:Interaction.Triggers>
                             <i:EventTrigger EventName="MouseLeftButtonDown">
-                                <i:InvokeCommandAction Command="{Binding GetNodeChildrens.CancelCommand}"/>
+                                <i:InvokeCommandAction Command="{Binding GetNode.CancelCommand}"/>
                             </i:EventTrigger>
-                            
                             <i:EventTrigger EventName="MouseLeftButtonUp">
-                                <i:InvokeCommandAction Command="{Binding GetNodeChildrens}" 
+                                <i:InvokeCommandAction Command="{Binding GetNode}" 
                                                    CommandParameter="{Binding ElementName=treeView, Path=SelectedItem, IsAsync=True}"/>
                         </i:EventTrigger>
                         </i:Interaction.Triggers>
@@ -72,15 +99,19 @@
 
                 </HierarchicalDataTemplate>
             </TreeView.Resources>
+            <i:Interaction.Behaviors>
+                <local:BindableSelectedItemBehavior SelectedItem="{Binding SelectedItem, Mode=TwoWay}" />
+            </i:Interaction.Behaviors>
             <i:Interaction.Triggers>
-                <i:EventTrigger EventName="SelectedItemChanged">
+                <!--<i:EventTrigger EventName="SelectedItemChanged">
+                    <i:InvokeCommandAction Command="{Binding GetNodeSize.CancelCommand}"/>
                     <i:InvokeCommandAction Command="{Binding GetNodeSize}" 
                                            CommandParameter="{Binding ElementName=treeView, Path=SelectedItem, IsAsync=True}"/>
-                </i:EventTrigger>
+                </i:EventTrigger>-->
             </i:Interaction.Triggers>
             <TreeView.ItemContainerStyle>
                 <Style TargetType="{x:Type TreeViewItem}">
-                    <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
+                    <!--<Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />-->
                     <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
                     <Setter Property="Visibility" Value="{Binding HideSystem, Converter={StaticResource boolToVisibilityConverter}}" />
                 </Style>

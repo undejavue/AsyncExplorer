@@ -19,74 +19,87 @@ namespace AsyncExplorer.Services
         {
             //await Task.Delay(TimeSpan.FromSeconds(3), token).ConfigureAwait(false);
             var task = Task.Run(() => GetDelay(), token);
-
             await task;
         }
 
         private static void GetDelay()
         {
-            Thread.Sleep(3000);
-
+            Thread.Sleep(100);
         }
 
 
-        public static async Task<ObservableCollection<TreeModel>> GetNodeTreeAsync(object arg, TreeModel selectedNode, CancellationToken token = new CancellationToken())
+        public static List<DriveInfo> GetDrives()
         {
-            var param = /*arg as TreeModel ??*/ selectedNode;
+            return FileManager.GetDrives().Where(x=>x.DriveType == DriveType.Fixed).ToList();
+        }
 
-            var result =  await Task.Run(() => FileManager.GetNodeTree(param, token), token);
+        public static async Task GetNode(TreeModel selectedNode, CancellationToken token = new CancellationToken())
+        {
+            selectedNode.SetDefaults();
 
+            var task2 = new Task(() => GetSizesDoWork(selectedNode, token));
+            task2.Start();
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+            
             selectedNode.Children.Clear();
-            foreach (var item in result)
+            var nodes = await GetNodeTree(selectedNode, token);
+            foreach (var item in nodes)
             {
                 selectedNode.AddChild(item);
             }
-            selectedNode.IsExpanded = true;
 
+            await task2;
+            watch.Stop();
+            var elapsedMs = watch.ElapsedMilliseconds;
+            selectedNode.Elapsed = (double)elapsedMs / 1000;
+        }
+
+        public static Task<ObservableCollection<TreeModel>> GetNodeTree(TreeModel selectedNode, CancellationToken token)
+        {
+            var result = Task.Run(()=>FileManager.GetNodeTree(selectedNode, token), token);
+            selectedNode.IsExpanded = true;
             return result;
         }
 
-        public static async Task<long> CalcDirectorySizeAsync(object arg, StatusModel state, CancellationToken token = new CancellationToken())
-        {
-            var node = arg as TreeModel;
-            return await Task.Run(() => GetSizesDoWork(node, state, token), token).ConfigureAwait(false);
-        }
 
-        private static long GetSizesDoWork(TreeModel node, StatusModel state, CancellationToken sizesToken = new CancellationToken())
+        private static void GetSizesDoWork(TreeModel node, CancellationToken token)
         {
             long sizes = 0;
-            //var state = new StatusModel();
-
             if (node != null)
             {
-                var dirs = FileManager.GetAllDirectories(node.Path, "*.*", sizesToken, true);
+                if (node.IsFile)
+                {
+                    sizes =  new FileInfo(node.Path).Length;
+                    node.SizeStr = FileManager.GetReadableSize(sizes);
+                    return;
+                }
 
-                state.FoldersCount = dirs.Count;
-
-                var files = FileManager.GetAllFiles(node.Path, "*.*", sizesToken);
-                state.FilesCount = files.Count;
-
-                state.ItemsCount = state.FilesCount + state.FoldersCount;
+                var dirs = FileManager.GetAllDirectories(node.Path, "*.*", token, true);
+                node.FoldersCount = dirs.Count;
+                var files = FileManager.GetAllFiles(node.Path, "*.*", token);
+                node.FilesCount = files.Count;
+                node.Count = node.FilesCount + node.FoldersCount;
+                node.Progress = 0;
 
                 int i = 0;
                 foreach (var file in files)
                 {
-                    if (sizesToken.IsCancellationRequested) break;
+                    if (token.IsCancellationRequested) break;
 
                     if (file.Length < 260)
                     {
                         var info = new FileInfo(file);
-                        if (FileManager.IsHiddenFile(info) && !true)
+                        if (FileManager.IsHiddenFile(info))
                             continue;
 
                         sizes += info.Length;
-                        var percent = (int)(100 / (double)files.Count * i++);
-                        state.Size = sizes;
+                        node.Progress = (int)(100 / (double)files.Count * i++);
+                        node.Size = sizes;
+                        node.SizeStr = $"{FileManager.GetReadableSize(sizes)} (Calculating {node.Progress} %)";
                     }
-                }         
+                }
+                node.SizeStr = FileManager.GetReadableSize(sizes);
             }
-
-            return sizes;
         }
     }
 }

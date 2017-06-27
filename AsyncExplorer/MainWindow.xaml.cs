@@ -1,17 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
+﻿using System.Windows;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using AsyncExplorer.ViewModels;
 
 namespace AsyncExplorer
@@ -28,6 +16,19 @@ namespace AsyncExplorer
             treeView.SelectedItemChanged += (sender, args) => 
             { };
 
+            treeView.MouseLeftButtonDown += TreeView_MouseLeftButtonDown;
+            treeView.MouseLeftButtonUp += TreeView_MouseLeftButtonUp;
+
+        }
+
+        private void TreeView_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            //throw new NotImplementedException();
+        }
+
+        private void TreeView_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            //throw new NotImplementedException();
         }
 
         private void TreeView_OnSelected(object sender, RoutedEventArgs e)

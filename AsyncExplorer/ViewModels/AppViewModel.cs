@@ -1,6 +1,9 @@
 ﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.IO;
+using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using AsyncExplorer.AsyncInfrastructure;
 using AsyncExplorer.Services;
 
@@ -8,48 +11,47 @@ namespace AsyncExplorer.ViewModels
 {
     public class AppViewModel : INotifyPropertyChanged
     {
-        public IAsyncCommand GetTreeNodes { get; private set; }
-        public IAsyncCommand GetNodeSize { get; private set; }
+        public RelayCommand SetDrive { get; private set; }
 
-        public IAsyncCommand TestAsyncCommand { get; private set; }
+        public ObservableCollection<DriveInfo> Drives { get; set; }
 
-        public ObservableCollection<TreeModel> Nodes { get; set; }
-
-        private StatusModel status;
-        public StatusModel Status {
-            get { return status; }
-            set { status = value; OnPropertyChanged(nameof(Status)); }
+        private DriveInfo _selectedDrive;
+        public DriveInfo SelectedDrive
+        {
+            get { return _selectedDrive; }
+            set { _selectedDrive = value; OnPropertyChanged(nameof(SelectedDrive)); }
         }
 
-        private TreeModel selectedNode;
-        public TreeModel SelectedNode
+
+        public ObservableCollection<TreeModel> Children { get; set; }
+
+        private TreeModel _selectedItem;
+        public TreeModel SelectedItem
         {
-            get { return selectedNode; }
+            get { return _selectedItem; }
             set
             {
-                selectedNode = value;
-                OnPropertyChanged(nameof(SelectedNode));
+                _selectedItem = value;
+                OnPropertyChanged(nameof(SelectedItem));
             }
-        }
-
-        private long sizeProgress;
-
-        public long SizeProgress
-        {
-            get { return sizeProgress; }
-            set { sizeProgress = value; OnPropertyChanged(nameof(SizeProgress)); }
         }
 
         public AppViewModel()
         {
-            GetTreeNodes = AsyncCommand.Create((token, arg) => DirectoryService.GetNodeTreeAsync(arg, SelectedNode, token));
-            GetNodeSize = AsyncCommand.Create((token, arg) => DirectoryService.CalcDirectorySizeAsync(arg, Status, token));
+            Drives = new ObservableCollection<DriveInfo>(DirectoryService.GetDrives());
+            SelectedDrive = Drives[0];
+            SelectedItem = new TreeModel {Name = SelectedDrive.Name, Path = SelectedDrive.RootDirectory.FullName};
+            Children = DirectoryService.GetNodeTree(SelectedItem, new CancellationToken()).Result;
 
-            TestAsyncCommand = AsyncCommand.Create((token, args) => DirectoryService.TestDelay(token));
-
-            SelectedNode = new TreeModel {Name = "Root Directory", Path = @"d:/" };
-            Nodes = new ObservableCollection<TreeModel>();
-            Status = new StatusModel();
+            SetDrive = new RelayCommand(obj =>
+            {
+                SelectedItem  = new TreeModel { Name = SelectedDrive.Name, Path = SelectedDrive.RootDirectory.FullName };
+                Children.Clear();
+                foreach (var node in DirectoryService.GetNodeTree(SelectedItem, new CancellationToken()).Result)
+                {
+                    Children.Add(node);
+                }
+            });
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
